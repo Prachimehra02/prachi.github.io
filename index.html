@@ -90,7 +90,7 @@ async function enterApp(){$("auth").classList.add("hidden");$("app").classList.r
 async function ensureDefaultProjects(){
  const {data}=await client.from("projects").select("id").eq("user_id",user.id).limit(1);
  if(!data?.length){
-   const defaults=[["Personal","#960018"],["Work","#3b6ea8"],["Learning","#5f8b55"],["Carmin","#8b3a62"],["TYP","#6b5ca5"],["Twinaura","#3f7f7a"]];
+   const defaults=[["Personal","#960018"],["Work","#3b6ea8"],["Learning","#5f8b55"]];
    await client.from("projects").insert(defaults.map(([name,color])=>({user_id:user.id,name,color})));
  }
 }
