@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TaskFlow — Cloud Task Manager</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{--accent:#960018;--bg:#f6f5f7;--card:#fff;--text:#27232a;--muted:#777;--line:#e7e4e8}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:14px Inter,Arial,sans-serif}
+button,input,select{font:inherit}button{cursor:pointer}.hidden{display:none!important}
+.auth{min-height:100vh;display:grid;place-items:center;padding:20px}.auth-card{background:#fff;width:420px;max-width:100%;padding:28px;border:1px solid var(--line);border-radius:18px;box-shadow:0 10px 35px #0001}.auth-card h1{margin:0}.auth-card p{color:var(--muted)}.auth-card input{width:100%;padding:12px;border:1px solid var(--line);border-radius:9px;margin:7px 0 12px}.auth-card button{width:100%;padding:12px;border:0;border-radius:9px;background:var(--accent);color:#fff;font-weight:700}.auth-switch{background:none!important;color:var(--accent)!important;margin-top:8px}
+.app{display:flex;min-height:100vh}.sidebar{width:245px;background:#fff;border-right:1px solid var(--line);padding:25px 16px;position:sticky;top:0;height:100vh}.brand{font-size:22px;font-weight:800;margin:0 8px 28px}.brand span{color:var(--accent)}.nav button{display:block;width:100%;text-align:left;border:0;background:transparent;padding:11px 12px;border-radius:9px;color:#555;margin:3px 0}.nav button.active,.nav button:hover{background:#f5e9eb;color:var(--accent);font-weight:700}.side-title{font-size:11px;color:#999;text-transform:uppercase;margin:28px 8px 8px;font-weight:700}.project{display:flex;align-items:center;gap:8px;padding:9px 8px;color:#555}.dot{width:9px;height:9px;border-radius:50%;display:inline-block}
+.main{flex:1;padding:30px;max-width:1400px;margin:auto;width:100%}.top{display:flex;justify-content:space-between;align-items:center;gap:15px;margin-bottom:24px}.top h1{margin:0;font-size:29px}.sub{color:var(--muted);margin-top:5px}.actions{display:flex;gap:8px}.btn{border:1px solid var(--line);background:#fff;border-radius:9px;padding:10px 14px}.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:13px;margin-bottom:20px}.stat,.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px}.stat strong{font-size:25px;display:block}.stat span{color:var(--muted);font-size:12px}.grid{display:grid;grid-template-columns:1.4fr 1fr;gap:18px}.full{grid-column:1/-1}.card h2{font-size:17px;margin:0 0 15px}.filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}.filters input,.filters select,.modal input,.modal select{border:1px solid var(--line);border-radius:8px;padding:9px;background:#fff}.filters input{flex:1;min-width:180px}
+.task{display:flex;align-items:flex-start;gap:10px;border:1px solid var(--line);border-radius:11px;padding:12px;margin:8px 0;background:#fff}.task.dragging{opacity:.45}.handle{color:#aaa;font-size:18px;cursor:grab}.check{width:18px;height:18px;accent-color:var(--accent);margin-top:2px}.task-body{flex:1;min-width:0}.task-title{font-weight:700}.done .task-title{text-decoration:line-through;color:#999}.meta{display:flex;gap:6px;flex-wrap:wrap;margin-top:5px}.pill{padding:3px 7px;border-radius:20px;background:#f1eff2;color:#666;font-size:11px}.high{background:#ffe3e7;color:#990019}.medium{background:#fff0d1;color:#855800}.low{background:#e2f3e5;color:#32663c}.overdue{color:#a00019;font-weight:700}.delete{border:0;background:#f5f5f5;border-radius:7px;padding:7px 9px;color:#777}.subtask-item{display:flex;gap:7px;align-items:center;font-size:12px;color:#666;margin-top:5px}.subtask-item input{accent-color:var(--accent)}
+.calendar-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}.month{font-weight:800;font-size:18px}.calendar{display:grid;grid-template-columns:repeat(7,1fr);border-top:1px solid var(--line);border-left:1px solid var(--line)}.dow,.day{min-height:88px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:7px}.dow{min-height:auto;font-size:11px;color:#888;font-weight:700;background:#fafafa}.day.muted{background:#fafafa;color:#bbb}.day.today{box-shadow:inset 0 3px 0 var(--accent)}.event{font-size:11px;background:#f5e5e8;color:#720014;border-radius:5px;padding:3px 5px;margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.reminder{display:flex;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}.exercise-done{background:#e2f3e5;color:#32663c}.calendar .day{cursor:pointer}.calendar .day:hover{background:#fbf7f8}.exercise-event{font-size:10px;background:#e2f3e5;color:#32663c;border-radius:5px;padding:3px 5px;margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.modal-bg{display:none;position:fixed;inset:0;background:#0007;align-items:center;justify-content:center;padding:20px;z-index:5}.modal-bg.open{display:flex}.modal{background:#fff;border-radius:16px;padding:22px;width:560px;max-width:100%;max-height:90vh;overflow:auto}.modal h2{margin-top:0}.formgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.wide{grid-column:1/-1}.modal label{display:block;font-size:12px;color:#666;margin-bottom:5px}.modal input,.modal select{width:100%}.modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:17px}.subrow{display:flex;gap:7px;margin-top:7px}.subrow input{flex:1}.message{font-size:12px;margin-top:8px;color:#a00019}
+@media(max-width:950px){.sidebar{display:none}.main{padding:20px}.stats{grid-template-columns:repeat(2,1fr)}.grid{grid-template-columns:1fr}.full{grid-column:auto}}@media(max-width:600px){.top{align-items:flex-start;flex-direction:column}.stats{grid-template-columns:1fr 1fr}.formgrid{grid-template-columns:1fr}.wide{grid-column:auto}.calendar .day{min-height:65px;padding:5px}}
+</style>
+</head>
+<body>
+<div id="auth" class="auth">
+  <div class="auth-card">
+    <h1>Task<span style="color:#960018">Flow</span></h1>
+    <p id="authText">Sign in to access your tasks from any device.</p>
+    <input id="email" type="email" placeholder="Email address">
+    <input id="password" type="password" placeholder="Password">
+    <button id="authBtn">Sign in</button>
+    <button id="authSwitch" class="auth-switch">Create an account</button>
+    <div id="authMsg" class="message"></div>
+  </div>
+</div>
+
+<div id="app" class="app hidden">
+<aside class="sidebar">
+  <div class="brand">Task<span>Flow</span></div>
+  <div class="nav">
+    <button class="active" onclick="setView('dashboard',this)">▦ Dashboard</button>
+    <button onclick="setView('tasks',this)">✓ My Tasks</button>
+    <button onclick="setView('calendar',this)">□ Calendar</button>
+  </div>
+  <div class="side-title">Projects</div>
+  <div id="projectList"></div>
+  <button class="btn" style="width:100%;margin-top:8px" onclick="openProject()">+ New Project</button>
+  <button class="btn" style="width:100%;margin-top:18px" onclick="signOut()">Sign out</button>
+</aside>
+
+<main class="main">
+  <div class="top"><div><h1 id="pageTitle">My Dashboard</h1><div class="sub" id="userEmail"></div></div><div class="actions"><button class="btn primary" onclick="openTask()">+ Add task</button></div></div>
+  <div class="stats"><div class="stat"><strong id="total">0</strong><span>Total tasks</span></div><div class="stat"><strong id="pending">0</strong><span>Pending</span></div><div class="stat"><strong id="today">0</strong><span>Due today</span></div><div class="stat"><strong id="overdue">0</strong><span>Overdue</span></div></div>
+  <div class="grid">
+    <section class="card" id="taskCard"><h2>Tasks</h2><div class="filters"><input id="search" placeholder="Search tasks..." oninput="render()"><select id="projectFilter" onchange="render()"><option value="all">All projects</option></select><select id="priorityFilter" onchange="render()"><option value="all">All priorities</option><option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option></select><select id="statusFilter" onchange="render()"><option value="all">All</option><option value="pending">Pending</option><option value="completed">Completed</option></select></div><div id="tasks"></div><div style="font-size:11px;color:#999;margin-top:10px">Drag tasks to reorder them.</div></section>
+    <section class="card" id="reminderCard"><h2>Upcoming reminders</h2><div id="reminders"></div></section><section class="card" id="exerciseCard"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><h2 style="margin:0">🏃 Exercise</h2><span id="exerciseStatus" class="pill">Not logged</span></div><div id="exerciseSummary" style="margin-top:12px;color:#666"></div><div style="margin-top:12px"><button class="btn primary" onclick="openExercise(today())">Log today's exercise</button></div></section>
+    <section class="card full" id="calendarCard"><div class="calendar-head"><div class="month" id="monthTitle"></div><div><button class="btn" onclick="changeMonth(-1)">‹</button> <button class="btn" onclick="goToday()">Today</button> <button class="btn" onclick="changeMonth(1)">›</button></div></div><div class="calendar" id="calendar"></div><div style="font-size:11px;color:#888;margin-top:8px">▶ Start date &nbsp; ◆ Due date &nbsp; ↔ Same day</div></section>
+  </div>
+</main>
+</div>
+
+<div class="modal-bg" id="taskModal"><div class="modal"><h2 id="taskModalTitle">Add Task</h2><form id="taskForm"><input type="hidden" id="editId"><div class="formgrid">
+<div class="wide"><label>Task</label><input id="taskTitle" required placeholder="What needs to be done?"></div>
+<div><label>Project</label><select id="taskProject"></select></div><div><label>Priority</label><select id="taskPriority"><option value="high">High</option><option value="medium" selected>Medium</option><option value="low">Low</option></select></div>
+<div><label>Start date</label><input id="taskStart" type="date"></div><div><label>Due date</label><input id="taskDue" type="date"></div>
+<div><label>Reminder</label><input id="taskReminder" type="datetime-local"></div><div><label>Recurring</label><select id="taskRepeat"><option value="none">Does not repeat</option><option value="daily">Daily</option><option value="weekly">Weekly</option><option value="monthly">Monthly</option></select></div>
+<div class="wide"><label>Subtasks</label><div id="subtaskEditor"></div><button type="button" class="btn" style="margin-top:8px" onclick="addSubtaskInput()">+ Add subtask</button></div>
+</div><div class="modal-actions"><button type="button" class="btn" onclick="closeModal('taskModal')">Cancel</button><button class="btn primary">Save task</button></div></form></div></div>
+
+<div class="modal-bg" id="dateActionModal"><div class="modal"><h2 id="dateActionTitle">Date</h2><p style="color:#777">What would you like to add?</p><div style="display:grid;gap:10px"><button class="btn" onclick="openTaskForDate()">+ Task</button><button class="btn" onclick="openExercise(selectedCalendarDate)">🏃 Exercise</button></div><div class="modal-actions"><button type="button" class="btn" onclick="closeModal('dateActionModal')">Cancel</button></div></div></div>
+<div class="modal-bg" id="exerciseModal"><div class="modal"><h2 id="exerciseModalTitle">Log Exercise</h2><form id="exerciseForm"><div class="formgrid"><div><label>Date</label><input id="exerciseDate" type="date" required></div><div><label>Duration (minutes)</label><input id="exerciseDuration" type="number" min="1" required placeholder="e.g. 45"></div></div><div class="modal-actions"><button type="button" class="btn" onclick="closeModal('exerciseModal')">Cancel</button><button class="btn primary">Mark as Done</button></div></form></div></div>
+<div class="modal-bg" id="projectModal"><div class="modal"><h2>New Project</h2><form id="projectForm"><label>Project name</label><input id="projectName" required placeholder="e.g. Website Redesign"><label style="margin-top:12px">Color</label><input id="projectColor" type="color" value="#960018"><div class="modal-actions"><button type="button" class="btn" onclick="closeModal('projectModal')">Cancel</button><button class="btn primary">Create project</button></div></form></div></div>
+
+<script src="config.js"></script>
+<script>
+const {createClient}=supabase;
+const client=createClient(window.SUPABASE_URL,window.SUPABASE_ANON_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+let user=null, projects=[], tasks=[], exercises=[], view="dashboard", month=new Date(), dragId=null, signMode="signin", selectedCalendarDate=null;
+
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
+const isoDate=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+const today=()=>isoDate(new Date());
+const proj=id=>projects.find(p=>p.id===id);
+
+async function init(){
+  if(!window.SUPABASE_URL||window.SUPABASE_URL==="YOUR_SUPABASE_URL"){ $("authMsg").textContent="Add your Supabase URL and key to config.js first."; return; }
+  const {data:{session}}=await client.auth.getSession();
+  if(session){user=session.user;await enterApp()} else showAuth();
+  client.auth.onAuthStateChange(async(_e,s)=>{if(s){user=s.user;await enterApp()}else{user=null;showAuth()}});
+}
+function showAuth(){$("auth").classList.remove("hidden");$("app").classList.add("hidden")}
+async function enterApp(){$("auth").classList.add("hidden");$("app").classList.remove("hidden");$("userEmail").textContent=user.email;await ensureDefaultProjects();await loadData()}
+async function ensureDefaultProjects(){
+ const {data}=await client.from("projects").select("id").eq("user_id",user.id).limit(1);
+ if(!data?.length){
+   const defaults=[["Personal","#960018"],["Work","#3b6ea8"],["Learning","#5f8b55"],["Carmin","#8b3a62"],["TYP","#6b5ca5"],["Twinaura","#3f7f7a"]];
+   await client.from("projects").insert(defaults.map(([name,color])=>({user_id:user.id,name,color})));
+ }
+}
+async function loadData(){
+ const p=await client.from("projects").select("*").eq("user_id",user.id).order("created_at");
+ const t=await client.from("tasks").select("*, subtasks(*)").eq("user_id",user.id).order("sort_order").order("created_at");
+ const e=await client.from("exercise_logs").select("*").eq("user_id",user.id).order("exercise_date",{ascending:false});
+ if(p.error||t.error||e.error){alert(p.error?.message||t.error?.message||e.error?.message);return}
+ projects=p.data||[];tasks=t.data||[];exercises=e.data||[];render();
+}
+async function saveTask(t,subtasks){
+ let row={user_id:user.id,title:t.title,project_id:t.project_id||null,priority:t.priority,start_date:t.start_date||null,due_date:t.due_date||null,reminder_at:t.reminder_at||null,repeat_rule:t.repeat_rule,completed:t.completed,sort_order:t.sort_order||Date.now()};
+ let result=t.id?await client.from("tasks").update(row).eq("id",t.id).eq("user_id",user.id).select().single():await client.from("tasks").insert(row).select().single();
+ if(result.error){alert(result.error.message);return null}
+ const id=result.data.id;
+ if(t.id) await client.from("subtasks").delete().eq("task_id",id).eq("user_id",user.id);
+ if(subtasks?.length) await client.from("subtasks").insert(subtasks.map((s,i)=>({task_id:id,user_id:user.id,title:s.title,completed:s.completed||false,sort_order:i})));
+ return result.data;
+}
+async function deleteTask(id){if(!confirm("Delete this task?"))return;await client.from("tasks").delete().eq("id",id).eq("user_id",user.id);await loadData()}
+async function toggle(id){const t=tasks.find(x=>x.id===id);if(!t)return;let completed=!t.completed;let {error}=await client.from("tasks").update({completed}).eq("id",id).eq("user_id",user.id);if(error)alert(error.message);else{if(completed&&t.repeat_rule!=="none")await createNext(t);await loadData()}}
+async function createNext(t){let d=new Date((t.due_date||t.start_date)+"T00:00:00");if(t.repeat_rule==="daily")d.setDate(d.getDate()+1);if(t.repeat_rule==="weekly")d.setDate(d.getDate()+7);if(t.repeat_rule==="monthly")d.setMonth(d.getMonth()+1);await saveTask({...t,id:null,completed:false,start_date:t.start_date?isoDate(new Date(new Date(t.start_date+"T00:00:00").setDate(new Date(t.start_date+"T00:00:00").getDate()+ (t.repeat_rule==="daily"?1:t.repeat_rule==="weekly"?7:30)))):null,due_date:isoDate(d),sort_order:Date.now()},(t.subtasks||[]).map(s=>({title:s.title,completed:false})))}
+function openTask(id=null){$("taskModal").classList.add("open");$("taskModalTitle").textContent=id?"Edit Task":"Add Task";let t=tasks.find(x=>x.id===id);$("editId").value=id||"";$("taskTitle").value=t?.title||"";$("taskStart").value=t?.start_date||"";$("taskDue").value=t?.due_date||"";$("taskReminder").value=t?.reminder_at?new Date(t.reminder_at).toISOString().slice(0,16):"";$("taskPriority").value=t?.priority||"medium";$("taskRepeat").value=t?.repeat_rule||"none";populateProjectSelect(t?.project_id||projects[0]?.id);renderSubtaskEditor(t?.subtasks||[])}
+function closeModal(id){$(id).classList.remove("open")}
+function populateProjectSelect(selected){$("taskProject").innerHTML=projects.map(p=>`<option value="${p.id}" ${p.id===selected?"selected":""}>${esc(p.name)}</option>`).join("")}
+function renderSubtaskEditor(arr){$("subtaskEditor").innerHTML=(arr||[]).map(s=>`<div class="subrow"><input class="subtask-input" value="${esc(s.title)}" placeholder="Subtask"><button type="button" class="delete" onclick="this.parentElement.remove()">×</button></div>`).join("")}
+function addSubtaskInput(){let r=document.createElement("div");r.className="subrow";r.innerHTML='<input class="subtask-input" placeholder="Subtask"><button type="button" class="delete" onclick="this.parentElement.remove()">×</button>';$("subtaskEditor").appendChild(r);r.querySelector("input").focus()}
+$("taskForm").onsubmit=async e=>{e.preventDefault();let id=$("editId").value;let old=tasks.find(x=>x.id===id);let subs=[...document.querySelectorAll(".subtask-input")].map((x,i)=>({title:x.value.trim(),completed:old?.subtasks?.[i]?.completed||false})).filter(x=>x.title);let saved=await saveTask({id,title:$("taskTitle").value.trim(),project_id:$("taskProject").value,priority:$("taskPriority").value,start_date:$("taskStart").value,due_date:$("taskDue").value,reminder_at:$("taskReminder").value||null,repeat_rule:$("taskRepeat").value,completed:old?.completed||false,sort_order:old?.sort_order||Date.now()},subs);if(saved){closeModal("taskModal");await loadData()}}
+$("projectForm").onsubmit=async e=>{e.preventDefault();let {error}=await client.from("projects").insert({user_id:user.id,name:$("projectName").value.trim(),color:$("projectColor").value});if(error)alert(error.message);else{closeModal("projectModal");await loadData()}}
+function openProject(){$("projectModal").classList.add("open");$("projectName").value=""}
+async function toggleSubtask(taskId,id,checked){let {error}=await client.from("subtasks").update({completed:checked}).eq("id",id).eq("task_id",taskId).eq("user_id",user.id);if(error)alert(error.message);else await loadData()}
+async function dropTask(target){if(!dragId||dragId===target)return;let a=tasks.findIndex(t=>t.id===dragId),b=tasks.findIndex(t=>t.id===target),x=tasks.splice(a,1)[0];tasks.splice(b,0,x);await Promise.all(tasks.map((t,i)=>client.from("tasks").update({sort_order:i}).eq("id",t.id).eq("user_id",user.id)));dragId=null;await loadData()}
+function renderTasks(){let q=$("search").value.toLowerCase(),pf=$("projectFilter").value,prf=$("priorityFilter").value,sf=$("statusFilter").value;let list=tasks.filter(t=>(!q||t.title.toLowerCase().includes(q))&&(pf==="all"||t.project_id===pf)&&(prf==="all"||t.priority===prf)&&(sf==="all"||(sf==="pending"&&!t.completed)||(sf==="completed"&&t.completed)));$("tasks").innerHTML=list.length?list.map(t=>{let p=proj(t.project_id),od=t.due_date&&t.due_date<today()&&!t.completed,subs=t.subtasks||[],done=subs.filter(s=>s.completed).length;return `<div class="task ${t.completed?"done":""}" draggable="true" ondragstart="dragId='${t.id}'" ondragover="event.preventDefault()" ondrop="dropTask('${t.id}')"><span class="handle">⋮⋮</span><input class="check" type="checkbox" ${t.completed?"checked":""} onchange="toggle('${t.id}')"><div class="task-body"><div class="task-title">${esc(t.title)}</div>${subs.length?`<div>${subs.map(s=>`<label class="subtask-item"><input type="checkbox" ${s.completed?"checked":""} onchange="toggleSubtask('${t.id}','${s.id}',this.checked)">${esc(s.title)}</label>`).join("")}</div><div style="font-size:10px;color:#999;margin-top:4px">${done}/${subs.length} subtasks complete</div>`:""}<div class="meta"><span class="pill ${t.priority}">${t.priority}</span>${p?`<span class="pill"><i class="dot" style="background:${p.color}"></i> ${esc(p.name)}</span>`:""}${t.start_date?`<span class="pill">Start ${t.start_date}</span>`:""}${t.due_date?`<span class="pill ${od?"overdue":""}">Due ${t.due_date}</span>`:""}${t.repeat_rule!=="none"?`<span class="pill">↻ ${t.repeat_rule}</span>`:""}</div></div><button class="delete" onclick="openTask('${t.id}')">Edit</button><button class="delete" onclick="deleteTask('${t.id}')">×</button></div>`}).join(""):`<div style="text-align:center;color:#999;padding:30px">No tasks match your filters.</div>`}
+function render(){renderSide();renderStats();renderTasks();renderReminders();renderExercise();renderCalendar()}
+function renderSide(){$("projectList").innerHTML=projects.map(p=>`<div class="project"><span class="dot" style="background:${p.color}"></span>${esc(p.name)}</div>`).join("");$("projectFilter").innerHTML='<option value="all">All projects</option>'+projects.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join("")}
+function renderStats(){$("total").textContent=tasks.length;$("pending").textContent=tasks.filter(t=>!t.completed).length;$("today").textContent=tasks.filter(t=>!t.completed&&t.due_date===today()).length;$("overdue").textContent=tasks.filter(t=>!t.completed&&t.due_date&&t.due_date<today()).length}
+function renderReminders(){let a=tasks.filter(t=>t.reminder_at&&!t.completed).sort((x,y)=>new Date(x.reminder_at)-new Date(y.reminder_at)).slice(0,7);$("reminders").innerHTML=a.length?a.map(t=>`<div class="reminder"><div><b>${esc(t.title)}</b><div style="font-size:11px;color:#888">${new Date(t.reminder_at).toLocaleString()}</div></div></div>`).join(""):'<div style="text-align:center;color:#999;padding:30px">No reminders set.</div>'}
+function openDateActions(date){selectedCalendarDate=date;$("dateActionTitle").textContent=new Date(date+"T00:00:00").toLocaleDateString(undefined,{day:"numeric",month:"long",year:"numeric"});$("dateActionModal").classList.add("open")}
+function exerciseForDate(date){return exercises.find(e=>e.exercise_date===date)}
+function openExercise(date){selectedCalendarDate=date||today();closeModal("dateActionModal");$("exerciseDate").value=selectedCalendarDate;let e=exerciseForDate(selectedCalendarDate);$("exerciseDuration").value=e?.duration_minutes||"";$("exerciseModalTitle").textContent=e?"Edit Exercise":"Log Exercise";$("exerciseModal").classList.add("open")}
+function openTaskForDate(){let d=selectedCalendarDate||today();closeModal("dateActionModal");openTask();$("taskStart").value=d;$("taskDue").value=d}
+function renderExercise(){let e=exerciseForDate(today()),count=exercises.filter(x=>x.exercise_date.startsWith(today().slice(0,7))).length;$("exerciseStatus").textContent=e?"Done":"Not logged";$("exerciseStatus").className="pill "+(e?"exercise-done":"");$("exerciseSummary").textContent=e?`Today: ${e.duration_minutes} min • ${count} exercise day${count===1?"":"s"} this month`:`Today's exercise is not logged • ${count} exercise day${count===1?"":"s"} this month`}
+async function saveExercise(date,duration){let e=exerciseForDate(date),r=e?await client.from("exercise_logs").update({duration_minutes:duration}).eq("id",e.id).eq("user_id",user.id):await client.from("exercise_logs").insert({user_id:user.id,exercise_date:date,duration_minutes:duration});if(r.error){alert(r.error.message);return false}let q=await client.from("exercise_logs").select("*").eq("user_id",user.id).order("exercise_date",{ascending:false});if(q.error){alert(q.error.message);return false}exercises=q.data||[];render();return true}
+$("exerciseForm").onsubmit=async e=>{e.preventDefault();if(await saveExercise($("exerciseDate").value,Number($("exerciseDuration").value)))closeModal("exerciseModal")}
+function renderCalendar(){let y=month.getFullYear(),m=month.getMonth(),first=new Date(y,m,1),start=new Date(y,m,1-first.getDay());$("monthTitle").textContent=month.toLocaleString(undefined,{month:"long",year:"numeric"});let out=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].map(x=>`<div class="dow">${x}</div>`).join("");for(let i=0;i<42;i++){let d=new Date(start);d.setDate(start.getDate()+i);let ds=isoDate(d),ts=tasks.filter(t=>t.due_date===ds||t.start_date===ds),ex=exerciseForDate(ds);out+=`<div class="day ${d.getMonth()===m?"":"muted"} ${ds===today()?"today":""}" onclick="openDateActions('${ds}')"><div>${d.getDate()}</div>${ts.slice(0,3).map(t=>`<div class="event">${t.start_date===ds&&t.due_date===ds?"↔ ":t.start_date===ds?"▶ ":"◆ "}${esc(t.title)}</div>`).join("")}${ex?`<div class="exercise-event">🏃 ${ex.duration_minutes} min</div>`:""}${ts.length>3?`<div style="font-size:10px;color:#888">+${ts.length-3} more</div>`:""}</div>`}$("calendar").innerHTML=out}
+function changeMonth(n){month.setMonth(month.getMonth()+n);renderCalendar()}function goToday(){month=new Date();renderCalendar()}
+function setView(v,b){document.querySelectorAll(".nav button").forEach(x=>x.classList.remove("active"));b.classList.add("active");$("pageTitle").textContent=v==="dashboard"?"My Dashboard":v==="tasks"?"My Tasks":"Calendar";$("taskCard").style.display=v==="calendar"?"none":"";$("reminderCard").style.display=v==="calendar"?"none":"";$("exerciseCard").style.display=v==="calendar"?"none":"";$("calendarCard").style.display=v==="tasks"?"none":""}
+$("authBtn").onclick=async()=>{let email=$("email").value.trim(),password=$("password").value;if(!email||!password){$("authMsg").textContent="Enter email and password.";return}let r=signMode==="signin"?await client.auth.signInWithPassword({email,password}):await client.auth.signUp({email,password});if(r.error)$("authMsg").textContent=r.error.message;else $("authMsg").textContent=signMode==="signin"?"Signed in. Check your dashboard.":"Account created. Check your email if confirmation is enabled."}
+$("authSwitch").onclick=()=>{signMode=signMode==="signin"?"signup":"signin";$("authBtn").textContent=signMode==="signin"?"Sign in":"Create account";$("authSwitch").textContent=signMode==="signin"?"Create an account":"Back to sign in";$("authText").textContent=signMode==="signin"?"Sign in to access your tasks from any device.":"Create your account to sync tasks across devices."}
+async function signOut(){await client.auth.signOut()}
+init();
+</script>
+</body>
+</html>
